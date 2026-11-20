@@ -16,7 +16,7 @@ function audit(actor,action,target){sql.prepare('INSERT INTO audit(actor,action,
 const password=()=>crypto.randomBytes(15).toString('base64url')+'aA1!';
 const hashSync=(p,s)=>crypto.scryptSync(p,s,64).toString('hex');
 if(!sql.prepare('SELECT COUNT(*) n FROM users').get().n){
- const accounts=Array.from({length:20},(_,i)=>({username:i?'staff'+String(i).padStart(2,'0'):'manager01',name:i?'同事'+String(i).padStart(2,'0'):'主管',role:i?'staff':'manager',password:password()}));
+ const accounts=Array.from({length:3},(_,i)=>({username:i?'staff'+String(i).padStart(2,'0'):'manager01',name:i?'同事'+String(i).padStart(2,'0'):'主管',role:i?'staff':'manager',password:password()}));
  fs.writeFileSync(path.join(root,'initial-accounts.csv'),'\ufeff'+['帳號,顯示名稱,權限,初始密碼',...accounts.map(u=>[u.username,u.name,u.role==='manager'?'主管':'一般同事',u.password].join(','))].join('\r\n'),{mode:0o600});
  tx(()=>{for(const u of accounts){let salt=crypto.randomBytes(16).toString('hex');sql.prepare('INSERT INTO users(username,name,role,salt,hash) VALUES(?,?,?,?,?)').run(u.username,u.name,u.role,salt,hashSync(u.password,salt))}});
 }
