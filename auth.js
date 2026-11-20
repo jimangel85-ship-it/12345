@@ -20,19 +20,22 @@ async function refresh(renderPage=true){
  const epoch=authEpoch;const result=await api('/state');if(epoch!==authEpoch)return;
  const {user,users:directory,...records}=result;currentUser=user;users=directory;db=records;
  if(isManager())names.accounts='帳號管理';else delete names.accounts;
+ $('.workspace span').textContent=users.filter(u=>u.active).length+' 組帳號';
  $('#identity').textContent=`${user.name} · ${isManager()?'主管':'一般同事'}`;
  $('.sidebar-bottom').innerHTML=`<span class="avatar">${esc(user.name.slice(0,1))}</span><div>${esc(user.name)}<small>${isManager()?'全隊客戶與帳號管理':'我的客戶與指派待辦'}</small></div>`;
  document.body.classList.remove('auth-mode');if(renderPage)route();
 }
-function accounts(){return title('PEOPLE & PERMISSIONS','帳號管理','20 個獨立帳號。變更權限、停用或重設密碼後，該帳號需重新登入。')+`<div class="notice">主管可查看、編輯全隊資料並分派工作；一般同事可管理自己的客戶，並完成被指派的待辦。被指派待辦不會開放其他客戶的聯絡資料。初始帳密存於電腦的 private/initial-accounts.csv。</div><div class="toolbar"><button class="secondary" id="import-legacy">匯入本機舊版資料</button><button class="secondary" id="show-audit">查看最近操作</button></div><div class="users-list">${users.map(u=>`<article class="panel user-row"><div><b>${esc(u.name)}</b> <span class="tag ${u.active?'':'red'}">${u.active?'啟用':'已停用'}</span><small>${esc(u.username)} · ${u.role==='manager'?'主管':'一般同事'}${u.mustChange?' · 待首次改密碼':''}</small></div><button class="secondary" data-user="${u.username}">管理帳號</button></article>`).join('')}</div>`}
+let showInactiveAccounts=false;
+function accounts(){return title('PEOPLE & PERMISSIONS','帳號管理',`${users.filter(u=>u.active).length} 組啟用帳號。變更權限、停用或重設密碼後，該帳號需重新登入。`)+`<div class="notice">主管可查看、編輯全隊資料並分派工作；一般同事可管理自己的客戶，並完成被指派的待辦。被指派待辦不會開放其他客戶的聯絡資料。初始帳密由主管保管，重設後請以最新密碼表為準。停用帳號的歷史資料保留，主管仍可查看或交接。</div><div class="toolbar"><button class="secondary" id="import-legacy">匯入本機舊版資料</button><button class="secondary" id="show-audit">查看最近操作</button><button class="secondary" id="toggle-inactive">${showInactiveAccounts?'隱藏停用帳號':'查看停用帳號'}</button></div><div class="users-list">${users.filter(u=>u.active||showInactiveAccounts).map(u=>`<article class="panel user-row"><div><b>${esc(u.name)}</b> <span class="tag ${u.active?'':'red'}">${u.active?'啟用':'已停用'}</span><small>${esc(u.username)} · ${u.role==='manager'?'主管':'一般同事'}${u.mustChange?' · 待首次改密碼':''}</small></div><button class="secondary" data-user="${u.username}">管理帳號</button></article>`).join('')}</div>`}
 function editUser(username){const u=users.find(x=>x.username===username);modal('管理帳號 · '+u.username,`<form id="user-form" data-user="${u.username}">${field('顯示名稱','name','text',u.name,'required maxlength="40"')}<label class="field">權限<select name="role"><option value="manager" ${u.role==='manager'?'selected':''}>主管</option><option value="staff" ${u.role==='staff'?'selected':''}>一般同事</option></select></label><label class="field">帳號狀態<select name="active"><option value="true" ${u.active?'selected':''}>啟用</option><option value="false" ${u.active?'':'selected'}>停用</option></select></label><p class="form-error" role="alert"></p><button class="primary">儲存帳號設定</button></form>${u.username!==currentUser.username?`<hr><button class="secondary" data-reset-user="${u.username}">重設此帳號密碼</button><small>重設後，原密碼失效，並立即登出該帳號的所有裝置。</small>`:''}`)}
 async function mutate(url,method,data){await api(url,method,data);await refresh();}
 document.addEventListener('click',async e=>{
- const el=e.target.closest('[data-add],[data-detail],[data-edit],[data-user],[data-reset-user],#close,#export,#logout,#change-password,#refresh,#import-legacy,#confirm-import,#show-audit,#confirm-reset');if(!el)return;
+ const el=e.target.closest('[data-add],[data-detail],[data-edit],[data-user],[data-reset-user],#close,#export,#logout,#change-password,#refresh,#import-legacy,#confirm-import,#show-audit,#confirm-reset,#toggle-inactive');if(!el)return;
  try{
   if(el.dataset.add)addForm(el.dataset.add);if(el.dataset.detail)detail(el.dataset.detail);if(el.dataset.edit)addForm('client',el.dataset.edit);if(el.id==='close')$('#modal').close();
   if(el.id==='logout'){await api('/logout','POST',{});signedOut();loginView()}
   if(el.id==='change-password')passwordView();
+  if(el.id==='toggle-inactive'){showInactiveAccounts=!showInactiveAccounts;render()}
   if(el.id==='refresh'){await refresh();toast('已取得最新團隊資料')}
   if(el.dataset.user)editUser(el.dataset.user);
   if(el.dataset.resetUser){modal('確認重設密碼',`<p>將立即登出 ${esc(el.dataset.resetUser)} 的所有裝置，並產生新初始密碼。</p><button class="primary" id="confirm-reset" data-username="${el.dataset.resetUser}">確認重設</button>`)}
