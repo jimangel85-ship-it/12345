@@ -3,6 +3,7 @@
 需要 Node.js 24.22.1 或相容且支援 node:sqlite 的版本。
 在此資料夾執行 node server.cjs，再開啟 http://localhost:4173。
 此版本需要伺服器，無法直接開啟 index.html 使用。
+GitHub 儲存庫與 GitHub Pages 不會執行此專案的 Node.js 登入 API；雲端部署步驟請閱讀 DEPLOYMENT.md。
 具備：客戶新增／編輯／搜尋／負責人與狀態篩選、商機新增與階段更新、待辦新增與完成、客戶聯繫紀錄、資料匯出。
 頁面同時支援手機與桌面尺寸。
 
@@ -67,3 +68,5 @@ node server.cjs
 
 驗證：node --test auth.test.cjs voice.test.cjs
 隔離的 UI 測試：node ui-fixture.cjs（4174 埠，使用 private/ui-fixture，不會讀寫真實團隊資料）。測試帳密只適用於隔離測試服務。
+
+2026/11/20 調整：本機僅啟用 manager01、staff01、staff02，已產生新密碼表並撤銷舊登入。其他既有帳號停用，歷史資料保留，可由主管在帳號管理查看。重設後請以最新三組帳號密碼表為準，舊的 initial-accounts.csv 與 20 人表均不可再用。此變更不會讓 GitHub Pages 具備後端登入服務。
