@@ -1,7 +1,9 @@
 async function api(url,method='GET',data){
  let response;
  try{response=await fetch('/api'+url,{method,credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},...(data?{body:JSON.stringify(data)}:{})})}catch{throw new Error('無法連線至伺服器，請確認服務仍在執行')}
- const result=await response.json();
+ const serviceError=location.hostname.endsWith('.github.io')?'此網站目前只有靜態網頁，尚未連接登入伺服器。請將完整 CRM 部署到支援 Node.js 與持久資料庫的主機。':'目前網址沒有可用的 CRM 登入服務，請確認 Node.js 伺服器與 /api/ 路徑已部署完成。';
+ if(!response.headers.get('content-type')?.includes('application/json'))throw new Error(serviceError);
+ let result;try{result=await response.json()}catch{throw new Error(serviceError)}
  if(!response.ok){if(response.status===401&&currentUser){signedOut();loginView('登入已過期，請重新登入')}throw Object.assign(new Error(result.error||'操作失敗'),{status:response.status})}
  return result;
 }
